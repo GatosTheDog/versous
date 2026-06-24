@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"google.golang.org/genai"
 )
@@ -30,13 +31,36 @@ func New(ctx context.Context) (*Client, error) {
 }
 
 func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
-	result, err := c.inner.Models.GenerateContent(ctx, "gemini-3.5-flash", genai.Text(prompt), nil)
+	var lastErr error
+	for attempt := range 3 {
+		callCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		result, err := c.inner.Models.GenerateContent(callCtx, "gemini-2.5-flash", genai.Text(prompt), nil)
+		cancel()
 
-	if err != nil {
-		return "", fmt.Errorf("generate: %w", err)
+		if err == nil {
+			if result == nil {
+				lastErr = fmt.Errorf("nil response from model")
+				continue
+			}
+			text := result.Text()
+			if text == "" {
+				lastErr = fmt.Errorf("empty response from model")
+				continue
+			}
+			return text, nil
+		}
+
+		lastErr = err
+
+		backoff := time.Duration(1<<(attempt+1)) * time.Second
+		select {
+		case <-time.After(backoff):
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
 	}
 
-	return result.Text(), nil
+	return "", fmt.Errorf("generate (3 attempts): %w", lastErr)
 }
 
 func (c *Client) Embed(ctx context.Context, text string) ([]float32, error) {

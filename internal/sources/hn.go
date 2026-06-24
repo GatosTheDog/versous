@@ -13,7 +13,7 @@ import (
 	"github.com/GatosTheDog/versous/internal/store"
 )
 
-const hnSearchURL = "https://hn.algolia.com/api/v1/search_by_date"
+const hnSearchURL = "https://hn.algolia.com/api/v1/search"
 
 type HN struct {
 	client *http.Client
@@ -51,7 +51,6 @@ func (h *HN) Fetch(ctx context.Context, product string) ([]store.Comment, error)
 	values.Add("query", product)
 	values.Add("tags", "comment")
 	values.Add("hitsPerPage", fmt.Sprintf("%d", h.limit))
-	values.Add("numericFilters", "created_at_i>1735689600") // after 2025-01-01
 
 	parsedUrl.RawQuery = values.Encode()
 

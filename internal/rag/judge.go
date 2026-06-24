@@ -31,8 +31,11 @@ func Judge(ctx context.Context, llmClient *llm.Client, aspect string, productA, 
 		winner = productB
 	}
 
-	urls := make([]string, 0)
-	for _, c := range append(commentsA, commentsB...) {
+	all := make([]store.Comment, 0, len(commentsA)+len(commentsB))
+	all = append(all, commentsA...)
+	all = append(all, commentsB...)
+	urls := make([]string, 0, len(all))
+	for _, c := range all {
 		urls = append(urls, c.Url)
 	}
 

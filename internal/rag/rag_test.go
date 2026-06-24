@@ -30,22 +30,38 @@ func TestRAGPipeline(t *testing.T) {
 
 	hn := sources.NewHN(10)
 
-	// ingest iPhone 16 comments
-	if err := Ingest(ctx, hn, llmClient, db, "iPhone 16"); err != nil {
+	// ingest both products
+	queriesA := []string{"iPhone 16", "iPhone 16 battery", "iPhone 16 camera"}
+	if err := Ingest(ctx, hn, llmClient, db, "iPhone 16", queriesA); err != nil {
 		t.Fatal(err)
 	}
 
-	// retrieve comments about battery
-	comments, err := Retrieve(ctx, llmClient, db, "iPhone 16 battery life", "iPhone 16", 10)
-	if err != nil {
+	queriesB := []string{"iPhone 15", "iPhone 15 battery", "iPhone 15 camera"}
+	if err := Ingest(ctx, hn, llmClient, db, "iPhone 15", queriesB); err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("retrieved %d comments for battery query", len(comments))
 
-	// judge battery aspect (single product for now — full compare in M6)
-	verdict, err := Judge(ctx, llmClient, "iPhone 16 battery life", "iPhone 16", "Pixel 9", comments, nil)
+	// retrieve for both
+	commentsA, err := Retrieve(ctx, llmClient, db, "camera performance", "iPhone 16", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	commentsB, err := Retrieve(ctx, llmClient, db, "camera performance", "iPhone 15", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("commentsA (%d):", len(commentsA))
+	for _, c := range commentsA {
+		t.Logf("  [%s] %s", c.ID, c.Body)
+	}
+	t.Logf("commentsB (%d):", len(commentsB))
+	for _, c := range commentsB {
+		t.Logf("  [%s] %s", c.ID, c.Body)
+	}
+
+	verdict, err := Judge(ctx, llmClient, "camera", "iPhone 16", "iPhone 15", commentsA, commentsB)
+
 	t.Logf("verdict: %s", verdict.Summary)
 }
