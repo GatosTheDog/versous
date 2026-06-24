@@ -30,7 +30,7 @@ func New(ctx context.Context) (*Client, error) {
 }
 
 func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
-	result, err := c.inner.Models.GenerateContent(ctx, "gemini-2.5-flash", genai.Text(prompt), nil)
+	result, err := c.inner.Models.GenerateContent(ctx, "gemini-3.5-flash", genai.Text(prompt), nil)
 
 	if err != nil {
 		return "", fmt.Errorf("generate: %w", err)
