@@ -7,9 +7,9 @@ import (
 
 func TestHNFetch(t *testing.T) {
 	ctx := context.Background()
-	hn := NewHN(5)
+	hn := NewHN(15)
 
-	comments, err := hn.Fetch(ctx, "iphone 16")
+	comments, err := hn.Fetch(ctx, "iphone 16 battery")
 	if err != nil {
 		t.Fatal(err)
 	}
