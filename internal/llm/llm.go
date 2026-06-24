@@ -34,7 +34,7 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 	var lastErr error
 	for attempt := range 3 {
 		callCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		result, err := c.inner.Models.GenerateContent(callCtx, "gemini-2.5-flash", genai.Text(prompt), nil)
+		result, err := c.inner.Models.GenerateContent(callCtx, "gemini-3.1-flash-lite", genai.Text(prompt), nil)
 		cancel()
 
 		if err == nil {
