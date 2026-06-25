@@ -23,13 +23,16 @@ func New(llmClient *llm.Client, db store.Store, srcs ...sources.CommentSource) *
 	return &Agent{llm: llmClient, db: db, sources: srcs}
 }
 
-func (a *Agent) Compare(ctx context.Context, productA, productB string) (Report, error) {
+func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects []string) (Report, error) {
+	if len(aspects) == 0 {
+		aspects = defaultAspects
+	}
 
 	for _, source := range a.sources {
-		if err := rag.Ingest(ctx, source, a.llm, a.db, productA, buildQueries(productA, defaultAspects)); err != nil {
+		if err := rag.Ingest(ctx, source, a.llm, a.db, productA, buildQueries(productA, aspects)); err != nil {
 			return Report{}, fmt.Errorf("ingest %s: %w", productA, err)
 		}
-		if err := rag.Ingest(ctx, source, a.llm, a.db, productB, buildQueries(productB, defaultAspects)); err != nil {
+		if err := rag.Ingest(ctx, source, a.llm, a.db, productB, buildQueries(productB, aspects)); err != nil {
 			return Report{}, fmt.Errorf("ingest %s: %w", productB, err)
 		}
 	}
@@ -38,7 +41,7 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string) (Report,
 	specB, _ := specs.Lookup(productB)
 
 	var verdicts []rag.Verdict
-	for _, aspect := range defaultAspects {
+	for _, aspect := range aspects {
 		commentsA, err := rag.Retrieve(ctx, a.llm, a.db, aspect, productA, 2)
 		if err != nil {
 			return Report{}, fmt.Errorf("retrieve %s/%s: %w", productA, aspect, err)

@@ -33,7 +33,7 @@ func TestAgent(t *testing.T) {
 
 	agent := New(llmClient, db, hn, yt)
 
-	report, err := agent.Compare(ctx, "iPhone 16", "iPhone 15")
+	report, err := agent.Compare(ctx, "iPhone 16", "iPhone 15", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
