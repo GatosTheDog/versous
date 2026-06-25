@@ -22,6 +22,7 @@ func Ingest(ctx context.Context, src sources.CommentSource, llmClient *llm.Clien
 				return fmt.Errorf("embed comment %s: %w", c.ID, err)
 			}
 			c.Embedding = vec
+			c.Product = product
 
 			if err := db.UpsertComment(ctx, c); err != nil {
 				return fmt.Errorf("upsert comment %s: %w", c.ID, err)

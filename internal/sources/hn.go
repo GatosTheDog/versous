@@ -74,7 +74,8 @@ func (h *HN) Fetch(ctx context.Context, product string) ([]store.Comment, error)
 
 	comments := make([]store.Comment, 0, len(result.Hits))
 	for _, hit := range result.Hits {
-		if hit.CommentText == "" {
+		body := stripHTML(hit.CommentText)
+		if len(body) < 50 {
 			continue
 		}
 		comments = append(comments, store.Comment{

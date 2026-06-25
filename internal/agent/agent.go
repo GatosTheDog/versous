@@ -23,13 +23,11 @@ func New(llmClient *llm.Client, db store.Store, src sources.CommentSource) *Agen
 }
 
 func (a *Agent) Compare(ctx context.Context, productA, productB string) (Report, error) {
-	queriesA := []string{productA}
-	queriesB := []string{productB}
 
-	if err := rag.Ingest(ctx, a.source, a.llm, a.db, productA, queriesA); err != nil {
+	if err := rag.Ingest(ctx, a.source, a.llm, a.db, productA, buildQueries(productA, defaultAspects)); err != nil {
 		return Report{}, fmt.Errorf("ingest %s: %w", productA, err)
 	}
-	if err := rag.Ingest(ctx, a.source, a.llm, a.db, productB, queriesB); err != nil {
+	if err := rag.Ingest(ctx, a.source, a.llm, a.db, productB, buildQueries(productB, defaultAspects)); err != nil {
 		return Report{}, fmt.Errorf("ingest %s: %w", productB, err)
 	}
 
@@ -68,4 +66,12 @@ func tally(verdicts []rag.Verdict, productA, productB string) string {
 		return productA
 	}
 	return productB
+}
+
+func buildQueries(product string, aspects []string) []string {
+	query := make([]string, 0, len(aspects))
+	for _, aspect := range aspects {
+		query = append(query, fmt.Sprintf("%s %s", product, aspect))
+	}
+	return query
 }
