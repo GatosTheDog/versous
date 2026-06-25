@@ -15,9 +15,10 @@ const videoSearchUrl = "https://www.googleapis.com/youtube/v3/search"
 const commentSearchUrl = "https://www.googleapis.com/youtube/v3/commentThreads"
 
 type Youtube struct {
-	client *http.Client
-	apiKey string
-	limit  int
+	client      *http.Client
+	apiKey      string
+	maxComments int
+	maxVideos   int
 }
 
 type YoutubeSearchResponse struct {
@@ -41,11 +42,12 @@ type YoutubeCommentsResponse struct {
 	} `json:"items"`
 }
 
-func NewYoutube(limit int) *Youtube {
+func NewYoutube(maxComments, maxVideos int) *Youtube {
 	return &Youtube{
-		client: &http.Client{},
-		apiKey: os.Getenv("YOUTUBE_API_KEY"),
-		limit:  limit,
+		client:      &http.Client{},
+		apiKey:      os.Getenv("YOUTUBE_API_KEY"),
+		maxComments: maxComments,
+		maxVideos:   maxVideos,
 	}
 }
 
@@ -60,7 +62,7 @@ func (yt *Youtube) Fetch(ctx context.Context, product string) ([]store.Comment, 
 	values := parsedVideoUrl.Query()
 	values.Add("part", "id")
 	values.Add("type", "video")
-	values.Add("maxResults", fmt.Sprintf("%d", 3))
+	values.Add("maxResults", fmt.Sprintf("%d", yt.maxVideos))
 	values.Add("q", product)
 	values.Add("key", yt.apiKey)
 
@@ -92,7 +94,7 @@ func (yt *Youtube) Fetch(ctx context.Context, product string) ([]store.Comment, 
 
 		values := parsedCommentUrl.Query()
 		values.Add("part", "snippet")
-		values.Add("maxResults", fmt.Sprintf("%d", 20))
+		values.Add("maxResults", fmt.Sprintf("%d", yt.maxComments))
 		values.Add("videoId", video.ID.VideoId)
 		values.Add("key", yt.apiKey)
 

@@ -29,8 +29,9 @@ func TestAgent(t *testing.T) {
 	defer db.Close()
 
 	hn := sources.NewHN(5)
+	yt := sources.NewYoutube(3, 5)
 
-	agent := New(llmClient, db, hn)
+	agent := New(llmClient, db, hn, yt)
 
 	report, err := agent.Compare(ctx, "iPhone 16", "iPhone 15")
 	if err != nil {

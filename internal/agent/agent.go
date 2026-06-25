@@ -13,22 +13,24 @@ import (
 var defaultAspects = []string{"camera", "battery", "value"}
 
 type Agent struct {
-	llm    *llm.Client
-	db     store.Store
-	source sources.CommentSource
+	llm     *llm.Client
+	db      store.Store
+	sources []sources.CommentSource
 }
 
-func New(llmClient *llm.Client, db store.Store, src sources.CommentSource) *Agent {
-	return &Agent{llm: llmClient, db: db, source: src}
+func New(llmClient *llm.Client, db store.Store, srcs ...sources.CommentSource) *Agent {
+	return &Agent{llm: llmClient, db: db, sources: srcs}
 }
 
 func (a *Agent) Compare(ctx context.Context, productA, productB string) (Report, error) {
 
-	if err := rag.Ingest(ctx, a.source, a.llm, a.db, productA, buildQueries(productA, defaultAspects)); err != nil {
-		return Report{}, fmt.Errorf("ingest %s: %w", productA, err)
-	}
-	if err := rag.Ingest(ctx, a.source, a.llm, a.db, productB, buildQueries(productB, defaultAspects)); err != nil {
-		return Report{}, fmt.Errorf("ingest %s: %w", productB, err)
+	for _, source := range a.sources {
+		if err := rag.Ingest(ctx, source, a.llm, a.db, productA, buildQueries(productA, defaultAspects)); err != nil {
+			return Report{}, fmt.Errorf("ingest %s: %w", productA, err)
+		}
+		if err := rag.Ingest(ctx, source, a.llm, a.db, productB, buildQueries(productB, defaultAspects)); err != nil {
+			return Report{}, fmt.Errorf("ingest %s: %w", productB, err)
+		}
 	}
 
 	var verdicts []rag.Verdict

@@ -12,7 +12,7 @@ func TestYoutubeFetch(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	yt := NewYoutube(5)
+	yt := NewYoutube(3, 5)
 
 	comments, err := yt.Fetch(ctx, "iphone 16 battery")
 	if err != nil {
