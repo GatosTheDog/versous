@@ -48,4 +48,7 @@ func TestAgent(t *testing.T) {
 		t.Logf("[%s] winner=%s | %s", aspect.Aspect, aspect.Winner, aspect.Summary)
 	}
 
+	t.Logf("SpecA: %+v", report.SpecA)
+	t.Logf("SpecB: %+v", report.SpecB)
+
 }

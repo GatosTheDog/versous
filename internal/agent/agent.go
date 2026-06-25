@@ -7,6 +7,7 @@ import (
 	"github.com/GatosTheDog/versous/internal/llm"
 	"github.com/GatosTheDog/versous/internal/rag"
 	"github.com/GatosTheDog/versous/internal/sources"
+	"github.com/GatosTheDog/versous/internal/specs"
 	"github.com/GatosTheDog/versous/internal/store"
 )
 
@@ -33,6 +34,9 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string) (Report,
 		}
 	}
 
+	specA, _ := specs.Lookup(productA)
+	specB, _ := specs.Lookup(productB)
+
 	var verdicts []rag.Verdict
 	for _, aspect := range defaultAspects {
 		commentsA, err := rag.Retrieve(ctx, a.llm, a.db, aspect, productA, 2)
@@ -55,7 +59,10 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string) (Report,
 		ProductA: productA,
 		ProductB: productB,
 		Aspects:  verdicts,
-		Winner:   tally(verdicts, productA, productB),
+		SpecA:    specA,
+		SpecB:    specB,
+
+		Winner: tally(verdicts, productA, productB),
 	}, nil
 }
 
