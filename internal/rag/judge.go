@@ -24,7 +24,7 @@ func Judge(ctx context.Context, llmClient *llm.Client, aspect string, productA, 
 		return Verdict{}, fmt.Errorf("judge: %w", err)
 	}
 
-	winner := productA
+	winner := parseWinner(result, productA, productB)
 	lower := strings.ToLower(result)
 	if strings.Contains(lower, strings.ToLower(productB)) &&
 		!strings.Contains(lower, strings.ToLower(productA)) {
@@ -63,11 +63,23 @@ func buildPrompt(aspect, productA, productB string, commentsA, commentsB []store
 	}
 
 	b.WriteString(fmt.Sprintf(`
-		Based on these real user comments, answer:
-		1. Which product (%s or %s) is better for %s, and why?
-		2. Summarise the key user sentiments in 2-3 sentences.
-		Be direct. Cite specific comments where possible.`, productA, productB, aspect))
+		Based on these real user comments:
+		1. First line must be: "Winner: %s" or "Winner: %s" or "Winner: Tie" — no exceptions.
+		2. Two bullet points: one strength of the winner, one weakness — quote a real comment for each.
+		3. One sentence on what the losing product does better.
+		Be brutally concise. No intros, no disclaimers.`, productA, productB))
 
 	return b.String()
+}
 
+func parseWinner(result, productA, productB string) string {
+	firstLine := strings.SplitN(result, "\n", 2)[0]
+	lower := strings.ToLower(firstLine)
+	if strings.Contains(lower, strings.ToLower(productB)) {
+		return productB
+	}
+	if strings.Contains(lower, strings.ToLower(productA)) {
+		return productA
+	}
+	return "Tie"
 }
