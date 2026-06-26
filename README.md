@@ -1,31 +1,42 @@
 # Versous
 
-CLI tool that compares two products using **real user sentiment** from Hacker News and YouTube, backed by a RAG pipeline with vector search. Specs are secondary — what people actually say drives the verdict.
+Compares two products using **real user sentiment** from Hacker News and YouTube, backed by a hand-rolled RAG pipeline with pgvector. Two modes: CLI (Gemini judges) and MCP server (your AI judges).
 
-Built to learn Go, RAG, and agentic system design from scratch. No LLM orchestration frameworks — all retrieval, embedding, and judging logic is hand-rolled.
+Built to learn Go, RAG, and agentic system design from scratch. No LLM orchestration frameworks.
 
 ## How it works
 
+### CLI mode
 ```
 versous compare "iPhone 16 Pro" "iPhone 17 Pro"
         │
         ├── Ingest (HN + YouTube)
-        │   ├── Search each source for aspect-specific queries
-        │   │   e.g. "iPhone 16 Pro Battery Life", "iPhone 16 Pro Camera Quality"
+        │   ├── Aspect-specific queries per product
         │   ├── Embed each comment → gemini-embedding-001 (3072-dim vectors)
         │   └── Upsert into Postgres + pgvector
         │
         ├── Retrieve (RAG)
         │   └── Cosine similarity search → top-k comments per product per aspect
         │
-        ├── Judge (LLM)
-        │   └── Gemini reads comment evidence → structured verdict per aspect
+        ├── Judge
+        │   └── Gemini reads evidence → structured verdict per aspect
         │
         ├── Specs
         │   └── Gemini generates key specs for any product on the fly
         │
         └── Render → CLI table
 ```
+
+### MCP mode
+Exposes three tools to any MCP-compatible AI (Claude, Cursor, Zed):
+
+| Tool | What it does |
+|---|---|
+| `ingest` | Fetch + embed comments for a product into pgvector |
+| `search_comments` | Cosine similarity retrieval — returns raw comment text + URLs |
+| `get_specs` | LLM-generated specs for any product |
+
+The AI calls tools in whatever order it decides, reads the raw evidence, and makes its own judgment. No hardcoded aspect list — the AI picks what matters.
 
 ## Stack
 
@@ -36,6 +47,7 @@ versous compare "iPhone 16 Pro" "iPhone 17 Pro"
 | Vector store | Postgres + pgvector (local or Neon free tier) |
 | Sources | Hacker News Algolia API + YouTube Data API v3 |
 | DB driver | `pgx/v5` |
+| MCP | `mark3labs/mcp-go` |
 
 All free tier. Zero infra cost.
 
@@ -53,25 +65,43 @@ Run the migration:
 psql $DATABASE_URL -f migrations/001_init.sql
 ```
 
-Set env vars (create a `.env` file):
+Create a `.env` file:
 ```
 GEMINI_API_KEY=...
 YOUTUBE_API_KEY=...
 DATABASE_URL=postgres://localhost/versous
 ```
 
-Compare two products:
+### CLI
+
 ```bash
 set -a && source .env && set +a
-go run ./cmd/versous compare "iPhone 16 Pro" "iPhone 17 Pro"
+go run ./cmd/versous compare "iPhone 16 Pro" "Pixel 9 Pro"
 ```
 
 Custom aspects:
 ```bash
-go run ./cmd/versous compare "AirPods Pro" "Sony WH-1000XM5" --aspects "noise cancellation,sound quality,comfort"
+go run ./cmd/versous compare "AirPods Pro 2" "Sony WH-1000XM5" --aspects "noise cancellation,sound quality,comfort"
 ```
 
-## Example output
+### MCP server
+
+Build and register with Claude Code:
+```bash
+go build -o versous-mcp ./cmd/versous-mcp
+claude mcp add versous ./versous-mcp \
+  -e GEMINI_API_KEY=... \
+  -e YOUTUBE_API_KEY=... \
+  -e DATABASE_URL=...
+```
+
+Then prompt Claude:
+```
+Use the versous tools to compare "AirPods Pro 2" vs "Sony WH-1000XM5".
+Ingest both products, search comments on noise cancellation and sound quality, then give me your verdict.
+```
+
+## Example output (CLI)
 
 ```
 === Versous: iPhone 16 pro vs iPhone 17 pro ===
@@ -79,26 +109,24 @@ go run ./cmd/versous compare "AirPods Pro" "Sony WH-1000XM5" --aspects "noise ca
 [Battery Life]  → iPhone 17 pro
 Winner: iPhone 17 pro
 
-* Strength: Significantly higher capacity — users note "better battery life than the iPhone 16."
-* Weakness: Concerns about extreme thinness; "you might as well switch the phone off."
+* Strength: Significantly higher capacity — "better battery life than the iPhone 16."
+* Weakness: Extreme thinness concerns; "you might as well switch the phone off."
 
-The iPhone 16 Pro has an established track record, though users report it "does not last the full day."
+The iPhone 16 Pro has established track record, though users report it "does not last the full day."
 
 [Camera Quality]  → iPhone 17 pro
 Winner: iPhone 17 pro
 
 * Strength: Exceptional results after manual config — "my quality now is amazing."
-* Weakness: Optical zoom marketing overstated — "it just starts to crop out the same 8x image."
+* Weakness: Optical zoom overstated — "it just starts to crop out the same 8x image."
 
-The iPhone 16 Pro remains capable for specialized use despite app integration issues.
+The iPhone 16 Pro remains capable for specialized use.
 
 [Price]  → iPhone 16 pro
 Winner: iPhone 16 pro
 
 * Strength: High perceived value — "I'd pay full price out of pocket, no questions asked."
 * Weakness: Some users rely on corporate discounts to justify the cost.
-
-The iPhone 17 Pro discourse focuses on global pricing arbitrage rather than inherent value.
 
 OVERALL WINNER: iPhone 17 pro
 
@@ -117,6 +145,7 @@ Price          Starting at $999       Starting at $1,099
 
 ```
 cmd/versous/        CLI entrypoint
+cmd/versous-mcp/    MCP server entrypoint
 internal/
   agent/            orchestrator — ingest → retrieve → judge → report
   llm/              Gemini wrapper (generate + embed, retry + backoff)
@@ -130,15 +159,8 @@ migrations/         SQL schema
 
 ## Running tests
 
-Integration tests require env vars and a running Postgres:
-
 ```bash
 GEMINI_API_KEY=... DATABASE_URL=... YOUTUBE_API_KEY=... go test ./... -timeout 300s
-```
-
-Unit tests (no deps):
-```bash
-go test ./internal/sources/... -run TestHN
 ```
 
 ## License

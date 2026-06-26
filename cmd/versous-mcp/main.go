@@ -31,9 +31,6 @@ func main() {
 	}
 	defer db.Close()
 
-	hn := sources.NewHN(5)
-	yt := sources.NewYoutube(3, 2)
-
 	s := server.NewMCPServer("versous", "1.0.0")
 
 	s.AddTool(
@@ -72,8 +69,20 @@ func main() {
 			mcp.WithDescription("Fetch and embed comments about a product into the vector store"),
 			mcp.WithString("product", mcp.Required(), mcp.Description("canonical product name, e.g. iPhone 16 Pro")),
 			mcp.WithString("queries", mcp.Required(), mcp.Description("comma-separated search queries, e.g. iPhone 16 Pro camera,iPhone 16 Pro battery")),
+			mcp.WithNumber("hn_limit", mcp.Description("HN comments per query, default 5")),
+			mcp.WithNumber("yt_comments", mcp.Description("YouTube comments per video, default 3")),
+			mcp.WithNumber("yt_videos", mcp.Description("YouTube videos to search, default 2")),
 		),
 		func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			hnLimit := req.GetInt("hn_limit", 5)
+			ytComments := req.GetInt("yt_comments", 3)
+			ytVideos := req.GetInt("yt_videos", 2)
+
+			srcs := []sources.CommentSource{
+				sources.NewHN(hnLimit),
+				sources.NewYoutube(ytComments, ytVideos),
+			}
+
 			product, err := req.RequireString("product")
 			if err != nil {
 				return nil, err
@@ -84,7 +93,7 @@ func main() {
 			}
 			queries := strings.Split(queriesRaw, ",")
 
-			for _, src := range []sources.CommentSource{hn, yt} {
+			for _, src := range srcs {
 				if err := rag.Ingest(ctx, src, llmClient, db, product, queries); err != nil {
 					return nil, err
 				}

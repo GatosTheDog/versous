@@ -11,7 +11,7 @@ import (
 	"github.com/GatosTheDog/versous/internal/store"
 )
 
-var defaultAspects = []string{"Battery Life", "Camera Quality", "Price"}
+var defaultAspects = []string{"performance", "value", "user experience"}
 
 type Agent struct {
 	llm     *llm.Client
