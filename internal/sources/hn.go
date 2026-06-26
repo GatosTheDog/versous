@@ -54,8 +54,6 @@ func (h *HN) Fetch(ctx context.Context, product string) ([]store.Comment, error)
 
 	parsedUrl.RawQuery = values.Encode()
 
-	fmt.Println(parsedUrl.String())
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsedUrl.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)

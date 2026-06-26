@@ -11,7 +11,7 @@ import (
 	"github.com/GatosTheDog/versous/internal/store"
 )
 
-var defaultAspects = []string{"Battery Life", "Camera Quality", "Performance", "Price"}
+var defaultAspects = []string{"Battery Life", "Camera Quality", "Price"}
 
 type Agent struct {
 	llm     *llm.Client
@@ -37,8 +37,8 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 		}
 	}
 
-	specA, _ := specs.Lookup(productA)
-	specB, _ := specs.Lookup(productB)
+	specA, _ := specs.Fetch(ctx, a.llm, productA)
+	specB, _ := specs.Fetch(ctx, a.llm, productB)
 
 	var verdicts []rag.Verdict
 	for _, aspect := range aspects {

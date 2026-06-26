@@ -75,7 +75,7 @@ func (yt *Youtube) Fetch(ctx context.Context, product string) ([]store.Comment, 
 
 	resp, err := yt.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch hn: %w", err)
+		return nil, fmt.Errorf("fetch youtube: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -107,7 +107,7 @@ func (yt *Youtube) Fetch(ctx context.Context, product string) ([]store.Comment, 
 
 		resp, err := yt.client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("fetch hn: %w", err)
+			return nil, fmt.Errorf("fetch youtube: %w", err)
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&resultComments); err != nil {
