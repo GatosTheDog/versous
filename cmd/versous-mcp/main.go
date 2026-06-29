@@ -122,8 +122,19 @@ func main() {
 		},
 	)
 
-	if err := server.ServeStdio(s); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
+		// HTTP mode for deployed server
+		httpServer := server.NewStreamableHTTPServer(s)
+		if err := httpServer.Start(":8080"); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	} else {
+		// stdio mode for local MCP
+		if err := server.ServeStdio(s); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
+
 }

@@ -4,6 +4,28 @@ Compares two products using **real user sentiment** from Hacker News and YouTube
 
 Built to learn Go, RAG, and agentic system design from scratch. No LLM orchestration frameworks.
 
+## Try it live (no setup required)
+
+Add to Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "versous": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://versous.fly.dev/mcp"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop, then ask:
+> "Use versous to compare iPhone 16 Pro vs Pixel 9 Pro — ingest both, then judge on battery, camera, and value."
+
+No API keys or local setup needed. The server runs on fly.io with a shared Neon vector store.
+
+For MCP clients with native HTTP support (Cursor, Zed): connect directly to `https://versous.fly.dev/mcp`.
+
 ## How it works
 
 ### CLI mode
