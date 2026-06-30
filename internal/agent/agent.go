@@ -9,6 +9,7 @@ import (
 	"github.com/GatosTheDog/versous/internal/sources"
 	"github.com/GatosTheDog/versous/internal/specs"
 	"github.com/GatosTheDog/versous/internal/store"
+	"golang.org/x/sync/errgroup"
 )
 
 var defaultAspects = []string{"performance", "value", "user experience"}
@@ -27,14 +28,20 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 	if len(aspects) == 0 {
 		aspects = defaultAspects
 	}
+	g, gctx := errgroup.WithContext(ctx)
 
 	for _, source := range a.sources {
-		if err := rag.Ingest(ctx, source, a.llm, a.db, productA, buildQueries(productA, aspects)); err != nil {
-			return Report{}, fmt.Errorf("ingest %s: %w", productA, err)
-		}
-		if err := rag.Ingest(ctx, source, a.llm, a.db, productB, buildQueries(productB, aspects)); err != nil {
-			return Report{}, fmt.Errorf("ingest %s: %w", productB, err)
-		}
+		src := source
+		g.Go(func() error {
+			return rag.Ingest(gctx, src, a.llm, a.db, productA, buildQueries(productA, aspects))
+		})
+		g.Go(func() error {
+			return rag.Ingest(gctx, src, a.llm, a.db, productB, buildQueries(productB, aspects))
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return Report{}, err
 	}
 
 	specA, _ := specs.Fetch(ctx, a.llm, productA)
