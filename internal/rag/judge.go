@@ -2,48 +2,62 @@ package rag
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/GatosTheDog/versous/internal/llm"
 	"github.com/GatosTheDog/versous/internal/store"
+	"google.golang.org/genai"
 )
 
 type Verdict struct {
-	Aspect   string
-	Winner   string
-	Summary  string
-	Evidence []string
+	Aspect      string
+	Winner      string
+	Summary     string
+	Weakness    string
+	LoserUpside string
+	Evidence    []store.Comment
+}
+
+type verdictJSON struct {
+	Winner      string `json:"winner"`
+	Strength    string `json:"strength"`
+	Weakness    string `json:"weakness"`
+	LoserUpside string `json:"loser_upside"`
 }
 
 func Judge(ctx context.Context, llmClient *llm.Client, aspect string, productA, productB string, commentsA, commentsB []store.Comment) (Verdict, error) {
 	prompt := buildPrompt(aspect, productA, productB, commentsA, commentsB)
 
-	result, err := llmClient.Generate(ctx, prompt)
+	result, err := llmClient.GenerateStructured(ctx, prompt, buildSchema())
 	if err != nil {
 		return Verdict{}, fmt.Errorf("judge: %w", err)
 	}
 
-	winner := parseWinner(result, productA, productB)
-	lower := strings.ToLower(result)
-	if strings.Contains(lower, strings.ToLower(productB)) &&
-		!strings.Contains(lower, strings.ToLower(productA)) {
+	var v verdictJSON
+	if err := json.Unmarshal([]byte(result), &v); err != nil {
+		return Verdict{}, fmt.Errorf("judge: parse response: %w", err)
+	}
+
+	winner := productA
+	if v.Winner == "B" {
 		winner = productB
+	} else if v.Winner == "Tie" {
+		winner = "Tie"
 	}
 
 	all := make([]store.Comment, 0, len(commentsA)+len(commentsB))
 	all = append(all, commentsA...)
 	all = append(all, commentsB...)
-	urls := make([]string, 0, len(all))
-	for _, c := range all {
-		urls = append(urls, c.Url)
-	}
 
 	return Verdict{
-		Aspect:   aspect,
-		Winner:   winner,
-		Summary:  result,
-		Evidence: urls,
+		Aspect:      aspect,
+		Winner:      winner,
+		Summary:     v.Strength,
+		Weakness:    v.Weakness,
+		LoserUpside: v.LoserUpside,
+		Evidence:    all,
 	}, nil
 }
 
@@ -62,24 +76,26 @@ func buildPrompt(aspect, productA, productB string, commentsA, commentsB []store
 		b.WriteString(fmt.Sprintf("- %s\n", c.Body))
 	}
 
-	b.WriteString(fmt.Sprintf(`
-		Based on these real user comments:
-		1. First line must be: "Winner: %s" or "Winner: %s" or "Winner: Tie" — no exceptions.
-		2. Two bullet points: one strength of the winner, one weakness — quote a real comment for each.
-		3. One sentence on what the losing product does better.
-		Be brutally concise. No intros, no disclaimers.`, productA, productB))
+	fmt.Fprintf(&b, `
+		Based on these real user comments, return a JSON object with:
+		- "winner": "A" if %s wins, "B" if %s wins, or "Tie"
+		- "strength": one strength of the winner, quoting a real comment
+		- "weakness": one weakness of the winner, quoting a real comment
+		- "loser_upside": one sentence on what the losing product does better
+		Be brutally concise. No intros, no disclaimers.`, productA, productB)
 
 	return b.String()
 }
 
-func parseWinner(result, productA, productB string) string {
-	firstLine := strings.SplitN(result, "\n", 2)[0]
-	lower := strings.ToLower(firstLine)
-	if strings.Contains(lower, strings.ToLower(productB)) {
-		return productB
+func buildSchema() *genai.Schema {
+	return &genai.Schema{
+		Type: genai.TypeObject,
+		Properties: map[string]*genai.Schema{
+			"winner":       {Type: genai.TypeString, Enum: []string{"A", "B", "Tie"}},
+			"strength":     {Type: genai.TypeString},
+			"weakness":     {Type: genai.TypeString},
+			"loser_upside": {Type: genai.TypeString},
+		},
+		Required: []string{"winner", "strength", "weakness", "loser_upside"},
 	}
-	if strings.Contains(lower, strings.ToLower(productA)) {
-		return productA
-	}
-	return "Tie"
 }

@@ -13,7 +13,18 @@ func Render(r agent.Report) string {
 	fmt.Fprintf(&b, "=== Versous: %s vs %s ===\n\n", r.ProductA, r.ProductB)
 	for _, aspect := range r.Aspects {
 		fmt.Fprintf(&b, "[%s]  → %s\n", aspect.Aspect, aspect.Winner)
-		fmt.Fprintf(&b, "%s\n\n", aspect.Summary)
+		fmt.Fprintf(&b, "+ %s\n", aspect.Summary)
+		fmt.Fprintf(&b, "- %s\n", aspect.Weakness)
+		fmt.Fprintf(&b, "  Loser upside: %s\n\n", aspect.LoserUpside)
+		fmt.Fprintf(&b, "  Evidence:\n")
+		for _, c := range aspect.Evidence {
+			body := c.Body
+			if len(body) > 120 {
+				body = body[:120] + "…"
+			}
+			fmt.Fprintf(&b, "  · %q\n    %s (%s)\n", body, c.Url, c.Source)
+		}
+		fmt.Fprintf(&b, "\n")
 	}
 	fmt.Fprintf(&b, "OVERALL WINNER: %s\n", r.Winner)
 

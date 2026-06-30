@@ -68,14 +68,62 @@ func (c *Client) Embed(ctx context.Context, text string) ([]float32, error) {
 		genai.NewContentFromText(text, "user"),
 	}
 
-	resp, err := c.inner.Models.EmbedContent(ctx, "gemini-embedding-001", contents, nil)
-	if err != nil {
-		return nil, fmt.Errorf("embed: %w", err)
+	var lastErr error
+	for attempt := range 3 {
+		resp, err := c.inner.Models.EmbedContent(ctx, "gemini-embedding-001", contents, nil)
+		if err == nil {
+			if len(resp.Embeddings) == 0 {
+				lastErr = fmt.Errorf("embed: empty response")
+				continue
+			}
+			return resp.Embeddings[0].Values, nil
+		}
+
+		lastErr = err
+
+		backoff := time.Duration(1<<(attempt+1)) * time.Second
+		select {
+		case <-time.After(backoff):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 
-	if len(resp.Embeddings) == 0 {
-		return nil, fmt.Errorf("embed: empty response")
+	return nil, fmt.Errorf("embed (3 attempts): %w", lastErr)
+}
+
+func (c *Client) GenerateStructured(ctx context.Context, prompt string, schema *genai.Schema) (string, error) {
+	var lastErr error
+	for attempt := range 3 {
+		callCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		result, err := c.inner.Models.GenerateContent(callCtx, "gemini-3.1-flash-lite", genai.Text(prompt), &genai.GenerateContentConfig{
+			ResponseMIMEType: "application/json",
+			ResponseSchema:   schema,
+		})
+		cancel()
+
+		if err == nil {
+			if result == nil {
+				lastErr = fmt.Errorf("nil response from model")
+				continue
+			}
+			text := result.Text()
+			if text == "" {
+				lastErr = fmt.Errorf("empty response from model")
+				continue
+			}
+			return text, nil
+		}
+
+		lastErr = err
+
+		backoff := time.Duration(1<<(attempt+1)) * time.Second
+		select {
+		case <-time.After(backoff):
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
 	}
 
-	return resp.Embeddings[0].Values, nil
+	return "", fmt.Errorf("generate (3 attempts): %w", lastErr)
 }
