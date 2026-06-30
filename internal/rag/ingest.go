@@ -17,7 +17,7 @@ func Ingest(ctx context.Context, src sources.CommentSource, llmClient *llm.Clien
 			return fmt.Errorf("fetch: %w", err)
 		}
 		for _, c := range comments {
-			vec, err := llmClient.Embed(ctx, c.Body)
+			vec, err := llmClient.EmbedDocument(ctx, c.Body)
 			if err != nil {
 				return fmt.Errorf("embed comment %s: %w", c.ID, err)
 			}

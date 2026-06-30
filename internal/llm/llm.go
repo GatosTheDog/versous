@@ -63,14 +63,22 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 	return "", fmt.Errorf("generate (3 attempts): %w", lastErr)
 }
 
-func (c *Client) Embed(ctx context.Context, text string) ([]float32, error) {
+func (c *Client) EmbedDocument(ctx context.Context, text string) ([]float32, error) {
+	return c.embed(ctx, text, "RETRIEVAL_DOCUMENT")
+}
+
+func (c *Client) EmbedQuery(ctx context.Context, text string) ([]float32, error) {
+	return c.embed(ctx, text, "RETRIEVAL_QUERY")
+}
+
+func (c *Client) embed(ctx context.Context, text, taskType string) ([]float32, error) {
 	contents := []*genai.Content{
 		genai.NewContentFromText(text, "user"),
 	}
 
 	var lastErr error
 	for attempt := range 3 {
-		resp, err := c.inner.Models.EmbedContent(ctx, "gemini-embedding-001", contents, nil)
+		resp, err := c.inner.Models.EmbedContent(ctx, "gemini-embedding-001", contents, &genai.EmbedContentConfig{TaskType: taskType})
 		if err == nil {
 			if len(resp.Embeddings) == 0 {
 				lastErr = fmt.Errorf("embed: empty response")

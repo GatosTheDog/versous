@@ -29,7 +29,7 @@ func TestGenerate(t *testing.T) {
 	t.Logf("response: %s", result)
 }
 
-func TestEmbed(t *testing.T) {
+func TestEmbedDocument(t *testing.T) {
 	ctx := context.Background()
 	if os.Getenv("GEMINI_API_KEY") == "" {
 		t.Skip("no API key")
@@ -40,13 +40,36 @@ func TestEmbed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := client.Embed(ctx, "battery drains fast")
+	result, err := client.EmbedDocument(ctx, "battery drains fast")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if len(result) == 0 {
-		t.Fatal("expected non-empty response")
+		t.Fatal("expected non-empty embedding")
+	}
+
+	t.Logf("vector length: %d", len(result))
+}
+
+func TestEmbedQuery(t *testing.T) {
+	ctx := context.Background()
+	if os.Getenv("GEMINI_API_KEY") == "" {
+		t.Skip("no API key")
+	}
+
+	client, err := New(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := client.EmbedQuery(ctx, "battery life")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(result) == 0 {
+		t.Fatal("expected non-empty embedding")
 	}
 
 	t.Logf("vector length: %d", len(result))

@@ -9,7 +9,7 @@ import (
 )
 
 func Retrieve(ctx context.Context, llmClient *llm.Client, db store.Store, query string, product string, limit int) ([]store.Comment, error) {
-	vec, err := llmClient.Embed(ctx, query)
+	vec, err := llmClient.EmbedQuery(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("embed query: %w", err)
 	}
