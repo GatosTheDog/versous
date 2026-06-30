@@ -14,6 +14,10 @@ import (
 
 var defaultAspects = []string{"performance", "value", "user experience"}
 
+const (
+	retrieveLimit = 2
+)
+
 type Agent struct {
 	llm     *llm.Client
 	db      store.Store
@@ -59,7 +63,7 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 		g2, gctx2 := errgroup.WithContext(ctx)
 		g2.Go(func() error {
 			var err error
-			commentsA, err = rag.Retrieve(gctx2, a.llm, a.db, aspect, productA, 2)
+			commentsA, err = rag.Retrieve(gctx2, a.llm, a.db, aspect, productA, retrieveLimit)
 			if err != nil {
 				return fmt.Errorf("retrieve %s/%s: %w", productA, aspect, err)
 			}
@@ -67,7 +71,7 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 		})
 		g2.Go(func() error {
 			var err error
-			commentsB, err = rag.Retrieve(gctx2, a.llm, a.db, aspect, productB, 2)
+			commentsB, err = rag.Retrieve(gctx2, a.llm, a.db, aspect, productB, retrieveLimit)
 			if err != nil {
 				return fmt.Errorf("retrieve %s/%s: %w", productB, aspect, err)
 			}
