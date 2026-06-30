@@ -6,7 +6,7 @@ Built to learn Go, RAG, and agentic system design from scratch. No LLM orchestra
 
 ## Demo
 
-[▶️ Watch the demo (MP4)](https://raw.githubusercontent.com/GatosTheDog/versous/main/demo.mp4)
+[▶️ Watch the demo (MP4)](https://github.com/GatosTheDog/versous/blob/main/demo.mp4)
 
 ## Try it live (no setup required)
 
