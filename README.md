@@ -34,7 +34,7 @@ For MCP clients with native HTTP support (Cursor, Zed): connect directly to `htt
 
 ### CLI mode
 ```
-versous compare "iPhone 16 Pro" "iPhone 17 Pro"
+versous compare "AirPods Pro 2" vs "Sony WH-1000XM5"
         │
         ├── Ingest (HN + YouTube)
         │   ├── Aspect-specific queries per product
@@ -102,7 +102,7 @@ DATABASE_URL=postgres://localhost/versous
 
 ```bash
 set -a && source .env && set +a
-go run ./cmd/versous compare "iPhone 16 Pro" "Pixel 9 Pro"
+go run ./cmd/versous compare "AirPods Pro 2" vs "Sony WH-1000XM5"
 ```
 
 Custom aspects:
@@ -130,41 +130,47 @@ Ingest both products, search comments on noise cancellation and sound quality, t
 ## Example output (CLI)
 
 ```
-=== Versous: iPhone 16 pro vs iPhone 17 pro ===
+=== Versous: AirPods Pro 2 vs Sony WH-1000XM5 ===
 
-[Battery Life]  → iPhone 17 pro
-Winner: iPhone 17 pro
+[noise cancellation]  → AirPods Pro 2
++ Airpods Pro 2 seems great at canceling noise
+- during the call i heard some hech hech noise that is very annoying
+  Loser upside: Sony WH-1000XM5 benefits from physical over-ear isolation combined with traditional earplugs for a more robust multi-layered noise mitigation strategy.
 
-* Strength: Significantly higher capacity — "better battery life than the iPhone 16."
-* Weakness: Extreme thinness concerns; "you might as well switch the phone off."
+  Evidence:
+  · "I m not getting the off option in mu noise cantrol please help and also during the call i heard some hech hech noise tha…"
+    https://youtube.com/watch?v=3ozTYEcg-O4 (youtube)
+  · "I completely understand the sentiments of the author. It's easy to fall into the trap of \"it's too easy to be true; let …"
+    https://news.ycombinator.com/item?id=43347805 (hn)
+  · "Any recommendation for best noise cancelling headphones? I'm looking at bose quiet comfort 45 or Sony WH-1000XM5, but I …"
+    https://news.ycombinator.com/item?id=37048192 (hn)
+  · "> noise-cancelling headphones + 3m earplugs might work togetherSure, any closed back headphones work and cancel out nois…"
+    https://news.ycombinator.com/item?id=43349417 (hn)
 
-The iPhone 16 Pro has established track record, though users report it "does not last the full day."
+[sound quality]  → AirPods Pro 2
++ AirPods Pro 2 are amazing, and have solid, respectable sound
+- they have a V shaped tuning, with various levels of bad
+  Loser upside: The Sony WH-1000XM5 benefits from a larger over-ear form factor that allows for a different soundstage and bass delivery compared to TWS earbuds.
 
-[Camera Quality]  → iPhone 17 pro
-Winner: iPhone 17 pro
+  Evidence:
+  · "What AirPods are you talking about? The wired AirPods that sound pretty bad have been overtaken by wireless Bluetooth Ai…"
+    https://news.ycombinator.com/item?id=48494917 (hn)
+  · "True, but I'd argue that the effect only starts to kick in at some point around $400 or so for a pair of headphones. Abo…"
+    https://news.ycombinator.com/item?id=36378534 (hn)
+  · "Что ж у них с басами,никогда не понимал сони,они не упроги а размыл…"
+    https://youtube.com/watch?v=rNq-UIpm9Hk (youtube)
+  · "I have question; does anybody know if there is much difference in sound quality between the Sony CH720 and the Sony XM5?"
+    https://youtube.com/watch?v=6WTHBCZBt_E (youtube)
 
-* Strength: Exceptional results after manual config — "my quality now is amazing."
-* Weakness: Optical zoom overstated — "it just starts to crop out the same 8x image."
+OVERALL WINNER: AirPods Pro 2
 
-The iPhone 16 Pro remains capable for specialized use.
-
-[Price]  → iPhone 16 pro
-Winner: iPhone 16 pro
-
-* Strength: High perceived value — "I'd pay full price out of pocket, no questions asked."
-* Weakness: Some users rely on corporate discounts to justify the cost.
-
-OVERALL WINNER: iPhone 17 pro
-
-─��� Specs ──────────────────────────────
-               iPhone 16 pro          iPhone 17 pro
-Processor      A18 Pro chip           Apple A19 Pro
-RAM            8GB                    12GB
-Battery        3,582 mAh              4,252 mAh
-Camera         48MP Fusion, 48MP      48MP Main, 48MP Ultra
-               Ultra Wide, 12MP 5x    Wide, 48MP 5x
-               Telephoto              Telephoto
-Price          Starting at $999       Starting at $1,099
+── Specs ──────────────────────────────
+               AirPods Pro 2          Sony WH-1000XM5
+Processor      Apple H2 chip          Integrated Processor V1 and HD Noise Cancelling Processor QN1
+RAM            N/A                    N/A
+Battery        Up to 6 hours (up to 30 hours with case) Up to 30 hours (ANC on) / 40 hours (ANC off)
+Camera         N/A                    N/A
+Price          $249                   $399.99
 ```
 
 ## Project layout
