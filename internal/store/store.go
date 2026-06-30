@@ -43,7 +43,7 @@ func (p *Postgres) UpsertComment(ctx context.Context, c Comment) error {
         ON CONFLICT (id) DO UPDATE
             SET body = EXCLUDED.body,
                 embedding = EXCLUDED.embedding
-    `, c.ID, c.Product, c.Source, c.Body, c.Url, pgvector.NewVector(c.Embedding))
+    `, c.ID, c.Product, c.Source, c.Body, c.Url, pgvector.NewHalfVector(c.Embedding))
 	if err != nil {
 		return fmt.Errorf("upsert comment: %w", err)
 	}
@@ -57,7 +57,7 @@ func (p *Postgres) SimilarComments(ctx context.Context, queryVec []float32, prod
         WHERE product = $2
         ORDER BY embedding <=> $1
         LIMIT $3
-    `, pgvector.NewVector(queryVec), product, limit)
+    `, pgvector.NewHalfVector(queryVec), product, limit)
 	if err != nil {
 		return nil, fmt.Errorf("similar comments query: %w", err)
 	}

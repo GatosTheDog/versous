@@ -29,7 +29,7 @@ func Render(r agent.Report) string {
 	fmt.Fprintf(&b, "OVERALL WINNER: %s\n", r.Winner)
 
 	if r.SpecA != (specs.Spec{}) {
-		fmt.Fprintf(&b, "\n── Specs ──────────────────────────────\n")
+		fmt.Fprintf(&b, "\n── Specs (model-estimated) ────────────\n")
 		fmt.Fprintf(&b, "%-14s %-22s %s\n", "", r.ProductA, r.ProductB)
 		fmt.Fprintf(&b, "%-14s %-22s %s\n", "Processor", r.SpecA.Processor, r.SpecB.Processor)
 		fmt.Fprintf(&b, "%-14s %-22s %s\n", "RAM", r.SpecA.RAM, r.SpecB.RAM)
