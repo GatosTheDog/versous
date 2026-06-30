@@ -33,10 +33,16 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 	for _, source := range a.sources {
 		src := source
 		g.Go(func() error {
-			return rag.Ingest(gctx, src, a.llm, a.db, productA, buildQueries(productA, aspects))
+			if err := rag.Ingest(gctx, src, a.llm, a.db, productA, buildQueries(productA, aspects)); err != nil {
+				return fmt.Errorf("ingest %s/%s: %w", src.Name(), productA, err)
+			}
+			return nil
 		})
 		g.Go(func() error {
-			return rag.Ingest(gctx, src, a.llm, a.db, productB, buildQueries(productB, aspects))
+			if err := rag.Ingest(gctx, src, a.llm, a.db, productB, buildQueries(productB, aspects)); err != nil {
+				return fmt.Errorf("ingest %s/%s: %w", src.Name(), productB, err)
+			}
+			return nil
 		})
 	}
 
@@ -46,16 +52,29 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 
 	specA, _ := specs.Fetch(ctx, a.llm, productA)
 	specB, _ := specs.Fetch(ctx, a.llm, productB)
+	var commentsA, commentsB []store.Comment
 
 	var verdicts []rag.Verdict
 	for _, aspect := range aspects {
-		commentsA, err := rag.Retrieve(ctx, a.llm, a.db, aspect, productA, 2)
-		if err != nil {
-			return Report{}, fmt.Errorf("retrieve %s/%s: %w", productA, aspect, err)
-		}
-		commentsB, err := rag.Retrieve(ctx, a.llm, a.db, aspect, productB, 2)
-		if err != nil {
-			return Report{}, fmt.Errorf("retrieve %s/%s: %w", productB, aspect, err)
+		g2, gctx2 := errgroup.WithContext(ctx)
+		g2.Go(func() error {
+			var err error
+			commentsA, err = rag.Retrieve(gctx2, a.llm, a.db, aspect, productA, 2)
+			if err != nil {
+				return fmt.Errorf("retrieve %s/%s: %w", productA, aspect, err)
+			}
+			return nil
+		})
+		g2.Go(func() error {
+			var err error
+			commentsB, err = rag.Retrieve(gctx2, a.llm, a.db, aspect, productB, 2)
+			if err != nil {
+				return fmt.Errorf("retrieve %s/%s: %w", productB, aspect, err)
+			}
+			return nil
+		})
+		if err := g2.Wait(); err != nil {
+			return Report{}, err
 		}
 
 		verdict, err := rag.Judge(ctx, a.llm, aspect, productA, productB, commentsA, commentsB)
