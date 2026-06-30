@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/GatosTheDog/versous/internal/llm"
 	"github.com/GatosTheDog/versous/internal/rag"
@@ -54,8 +55,14 @@ func (a *Agent) Compare(ctx context.Context, productA, productB string, aspects 
 		return Report{}, err
 	}
 
-	specA, _ := specs.Fetch(ctx, a.llm, productA)
-	specB, _ := specs.Fetch(ctx, a.llm, productB)
+	specA, err := specs.Fetch(ctx, a.llm, productA)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warn: specs %s: %v\n", productA, err)
+	}
+	specB, err := specs.Fetch(ctx, a.llm, productB)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warn: specs %s: %v\n", productB, err)
+	}
 	var commentsA, commentsB []store.Comment
 
 	var verdicts []rag.Verdict
@@ -104,10 +111,13 @@ func tally(verdicts []rag.Verdict, productA, productB string) string {
 	for _, v := range verdicts {
 		votes[v.Winner]++
 	}
-	if votes[productA] >= votes[productB] {
+	if votes[productA] > votes[productB] {
 		return productA
 	}
-	return productB
+	if votes[productB] > votes[productA] {
+		return productB
+	}
+	return "Tie"
 }
 
 func buildQueries(product string, aspects []string) []string {

@@ -40,11 +40,14 @@ func Judge(ctx context.Context, llmClient *llm.Client, aspect string, productA, 
 		return Verdict{}, fmt.Errorf("judge: parse response: %w", err)
 	}
 
-	winner := productA
-	if v.Winner == "B" {
+	var winner string
+	switch v.Winner {
+	case "B":
 		winner = productB
-	} else if v.Winner == "Tie" {
+	case "Tie":
 		winner = "Tie"
+	default:
+		winner = productA
 	}
 
 	all := make([]store.Comment, 0, len(commentsA)+len(commentsB))
@@ -64,16 +67,16 @@ func Judge(ctx context.Context, llmClient *llm.Client, aspect string, productA, 
 func buildPrompt(aspect, productA, productB string, commentsA, commentsB []store.Comment) string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("You are comparing %s vs %s on the aspect: %s\n\n", productA, productB, aspect))
+	fmt.Fprintf(&b, "You are comparing %s vs %s on the aspect: %s\n\n", productA, productB, aspect)
 
-	b.WriteString(fmt.Sprintf("User comments about %s:\n", productA))
+	fmt.Fprintf(&b, "User comments about %s:\n", productA)
 	for _, c := range commentsA {
-		b.WriteString(fmt.Sprintf("- %s\n", c.Body))
+		fmt.Fprintf(&b, "- %s\n", c.Body)
 	}
 
-	b.WriteString(fmt.Sprintf("\nUser comments about %s:\n", productB))
+	fmt.Fprintf(&b, "\nUser comments about %s:\n", productB)
 	for _, c := range commentsB {
-		b.WriteString(fmt.Sprintf("- %s\n", c.Body))
+		fmt.Fprintf(&b, "- %s\n", c.Body)
 	}
 
 	fmt.Fprintf(&b, `
